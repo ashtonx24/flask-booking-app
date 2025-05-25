@@ -1,0 +1,17 @@
+flask
+ics
+flask-login
+werkzeug
+flask-mail
+python-dotenv
+requests
+pandas
+numpy
+sqlite3  # Standard library, no need to install
+csv      # Standard library, no need to install
+tempfile # Standard library, no need to install
+datetime # Standard library, no need to install
+os       # Standard library, no need to install
+
+you will need all these if you want to run the code
+# in the requirements.txt file

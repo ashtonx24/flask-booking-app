@@ -172,3 +172,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Local additions
+.env
+*.sqlite3
+instance/
+*.log
+.vscode/
+.idea/
+venv/

@@ -1,0 +1,59 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Boss Lodging Booking</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+      <h1 class="text-2xl font-bold mb-4 text-center">Book a Room</h1>
+      <form action="/book" method="POST" class="space-y-4">
+        <input
+          type="text"
+          name="name"
+          placeholder="Your Name"
+          required
+          class="w-full p-2 border rounded"
+        />
+
+        <select name="room" required class="w-full p-2 border rounded">
+          <option value="">Select Room</option>
+          <option value="Room A">Room A</option>
+          <option value="Room B">Room B</option>
+          <option value="Room C">Room C</option>
+        </select>
+
+        <input
+          type="datetime-local"
+          name="start"
+          required
+          class="w-full p-2 border rounded"
+        />
+        <input
+          type="datetime-local"
+          name="end"
+          required
+          class="w-full p-2 border rounded"
+        />
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required />
+
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+        >
+          Book Now
+        </button>
+      </form>
+    </div>
+  </body>
+</html>
