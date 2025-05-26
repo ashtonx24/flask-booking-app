@@ -5,7 +5,10 @@
     <meta charset="UTF-8" />
     <title>Admin Booking View</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <style>
       body {
         background-color: #121212;
@@ -21,11 +24,23 @@
     </style>
   </head>
   <body class="p-4">
+    <nav
+      class="navbar"
+      style="position: absolute; top: 1rem; right: 1rem; z-index: 1000"
+    >
+      <a href="{{ url_for('logout') }}" class="btn btn-danger ms-auto">
+        Logout
+      </a>
+    </nav>
     <div class="container">
-      <h1 class="mb-4 text-center text-light">📋 All Bookings</h1>
+      <h1 class="mb-4 text-center text-light" style="margin-top: 30px">
+        📋 All Bookings
+      </h1>
 
       <div class="table-responsive rounded shadow">
-        <table class="table table-dark table-bordered table-hover align-middle text-center">
+        <table
+          class="table table-dark table-bordered table-hover align-middle text-center"
+        >
           <thead class="table-secondary text-dark">
             <tr>
               <th scope="col">ID</th>
@@ -34,6 +49,7 @@
               <th scope="col">Start</th>
               <th scope="col">End</th>
               <th scope="col">Cancel</th>
+              <th scope="col">Edit</th>
             </tr>
           </thead>
           <tbody>
@@ -45,9 +61,22 @@
               <td>{{ booking[3] }}</td>
               <td>{{ booking[4] }}</td>
               <td>
-                <form action="{{ url_for('cancel_booking', booking_id=booking[0]) }}" method="post">
-                  <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                <form
+                  action="{{ url_for('cancel_booking', booking_id=booking[0]) }}"
+                  method="post"
+                >
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    Cancel
+                  </button>
                 </form>
+              </td>
+              <td>
+                <a
+                  href="{{ url_for('edit_booking', booking_id=booking[0]) }}"
+                  class="btn btn-warning btn-sm"
+                >
+                  Edit
+                </a>
               </td>
               {# Removed .ics download block to prevent BuildError #}
             </tr>
@@ -56,14 +85,22 @@
         </table>
       </div>
 
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
-        <a href="{{ url_for('export_bookings') }}" class="btn btn-success mb-2 mb-md-0">
+      <div
+        class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4"
+      >
+        <a
+          href="{{ url_for('export_bookings') }}"
+          class="btn btn-success mb-2 mb-md-0"
+        >
           📤 Export Bookings (CSV)
         </a>
         <a href="/" class="text-decoration-none text-info">← Back to Booking</a>
       </div>
 
-      <a href="{{ url_for('calendar_view') }}" class="btn btn-outline-info mt-4">
+      <a
+        href="{{ url_for('calendar_view') }}"
+        class="btn btn-outline-info mt-4"
+      >
         📅 View Booking Calendar
       </a>
     </div>

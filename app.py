@@ -134,7 +134,7 @@ def admin():
     return render_template('admin.html', bookings=all_bookings)
 
 ## login and logout functionality
-@app.route('/login', methods=['GET', 'POST'])
+# @app.route('/login', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -188,39 +188,6 @@ def export_bookings():
     return Response(generate(), mimetype='text/csv',
                     headers={'Content-Disposition': 'attachment;filename=bookings.csv'})
 
-# @app.route('/calendar/<int:booking_id>')
-# @login_required
-# def download_ics(booking_id):
-#     conn = sqlite3.connect(DB_FILE)
-#     c = conn.cursor()
-#     c.execute('SELECT name, room, start, end FROM bookings WHERE id = ?', (booking_id,))
-#     result = c.fetchone()
-#     conn.close()
-
-#     if not result:
-#         return "Booking not found", 404
-
-#     name, room, start, end = result
-
-#     # Parse to datetime objects
-#     start_dt = datetime.datetime.fromisoformat(start)
-#     end_dt = datetime.datetime.fromisoformat(end)
-
-#     # Create calendar event
-#     cal = Calendar()
-#     event = Event()
-#     event.name = f"{room} Booking - {name}"
-#     event.begin = start_dt
-#     event.end = end_dt
-#     event.location = "Your lodging location"  # Optional
-#     event.description = f"Room: {room}\nBooked by: {name}"
-#     cal.events.add(event)
-
-#     # Write to temporary file
-#     with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.ics') as f:
-#         f.write(str(cal))
-#         f.seek(0)
-#         return send_file(f.name, as_attachment=True, download_name=f"{room}_booking.ics")
     
 @login_manager.unauthorized_handler
 def unauthorized_callback():
@@ -252,6 +219,48 @@ def calendar_data():
     } for name, room, start, end in rows]
 
     return jsonify(events)
+
+@app.route('/admin/edit/<int:booking_id>', methods=['GET', 'POST'])
+@login_required
+def edit_booking(booking_id):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+
+    if request.method == 'POST':
+        # Get updated data from form
+        name = request.form['name']
+        room = request.form['room']
+        start = request.form['start']
+        end = request.form['end']
+        email = request.form['email']
+
+        # Optional: Check for overlapping bookings here, excluding current booking
+        c.execute('''SELECT COUNT(*) FROM bookings WHERE room = ? AND id != ? AND (start < ? AND end > ?)''',
+                  (room, booking_id, end, start))
+        (overlap_count,) = c.fetchone()
+        if overlap_count > 0:
+            conn.close()
+            return "Room already booked for that time slot", 400
+
+        # Update booking in DB
+        c.execute('''
+            UPDATE bookings SET name = ?, room = ?, start = ?, end = ?, email = ?
+            WHERE id = ?
+        ''', (name, room, start, end, email, booking_id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('admin'))
+
+    else:
+        # GET method: fetch current booking data
+        c.execute('SELECT * FROM bookings WHERE id = ?', (booking_id,))
+        booking = c.fetchone()
+        conn.close()
+        if not booking:
+            return "Booking not found", 404
+
+        # booking = (id, name, room, start, end, email)
+        return render_template('edit_booking.html', booking=booking)
 
 if __name__ == '__main__':
     app.run(debug=True)

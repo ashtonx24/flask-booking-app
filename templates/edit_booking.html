@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Booking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .form-control, .btn {
+      background-color: #1e1e1e;
+      color: white;
+      border: 1px solid #444;
+    }
+    .form-control:focus {
+      background-color: #292929;
+      color: white;
+      border-color: #00aaff;
+      outline: none;
+      box-shadow: 0 0 5px #00aaff;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <h1 class="mb-4 text-center">Edit Booking #{{ booking[0] }}</h1>
+    <form method="POST" action="{{ url_for('edit_booking', booking_id=booking[0]) }}">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="name"
+          name="name"
+          value="{{ booking[1] }}"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="room" class="form-label">Room</label>
+        <input
+          type="text"
+          class="form-control"
+          id="room"
+          name="room"
+          value="{{ booking[2] }}"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="start" class="form-label">Start</label>
+        <input
+          type="datetime-local"
+          class="form-control"
+          id="start"
+          name="start"
+          value="{{ booking[3]|replace(' ', 'T') }}"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="end" class="form-label">End</label>
+        <input
+          type="datetime-local"
+          class="form-control"
+          id="end"
+          name="end"
+          value="{{ booking[4]|replace(' ', 'T') }}"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input
+          type="email"
+          class="form-control"
+          id="email"
+          name="email"
+          value="{{ booking[5] }}"
+          required
+        />
+      </div>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{{ url_for('admin') }}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
