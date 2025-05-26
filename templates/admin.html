@@ -9,6 +9,13 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
+    <!-- FullCalendar CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css"
+      rel="stylesheet"
+    />
+
     <style>
       body {
         background-color: #121212;
@@ -21,6 +28,30 @@
       td {
         vertical-align: middle;
       }
+
+      /* Calendar styles */
+      #calendar {
+        max-width: 900px;
+        margin: 2rem auto;
+        border: 1px solid #444;
+        padding: 1rem;
+        border-radius: 8px;
+        background: #222; /* darker background for calendar */
+        color: #eee;
+      }
+
+      .info-box {
+        max-width: 900px;
+        margin: 1rem auto 3rem auto;
+        padding: 1rem;
+        background: #1e1e1e;
+        border-radius: 8px;
+        color: #ddd;
+      }
+
+      .info-box h3 {
+        margin-bottom: 1rem;
+      }
     </style>
   </head>
   <body class="p-4">
@@ -32,6 +63,7 @@
         Logout
       </a>
     </nav>
+
     <div class="container">
       <h1 class="mb-4 text-center text-light" style="margin-top: 30px">
         📋 All Bookings
@@ -78,7 +110,6 @@
                   Edit
                 </a>
               </td>
-              {# Removed .ics download block to prevent BuildError #}
             </tr>
             {% endfor %}
           </tbody>
@@ -97,14 +128,97 @@
         <a href="/" class="text-decoration-none text-info">← Back to Booking</a>
       </div>
 
-      <a
-        href="{{ url_for('calendar_view') }}"
-        class="btn btn-outline-info mt-4"
-      >
-        📅 View Booking Calendar
-      </a>
+      <!-- FullCalendar section starts here -->
+      <h2 class="text-center text-light mt-5">📅 Room Booking Calendar</h2>
+      <div id="calendar"></div>
+
+      <div class="info-box" id="booking-details">
+        <h3>Bookings on Selected Day:</h3>
+        <ul id="details-list"></ul>
+      </div>
+      <!-- FullCalendar section ends -->
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("Initializing FullCalendar...");
+
+        const calendarEl = document.getElementById("calendar");
+        const detailsList = document.getElementById("details-list");
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "dayGridMonth",
+          events: "/calendar-data",
+          dateClick: function (info) {
+            const clickedDateStr = info.dateStr; // e.g., '2025-05-27'
+
+            fetch("/calendar-data")
+              .then((res) => res.json())
+              .then((events) => {
+                const filtered = events.filter((e) => {
+                  const startDateStr = e.start.slice(0, 10);
+                  const endDateStr = e.end.slice(0, 10);
+
+                  return (
+                    clickedDateStr >= startDateStr &&
+                    clickedDateStr <= endDateStr
+                  );
+                });
+
+                detailsList.innerHTML = "";
+
+                if (filtered.length === 0) {
+                  detailsList.innerHTML = "<li>No bookings</li>";
+                } else {
+                  filtered.forEach((ev) => {
+                    // Create list item
+                    const li = document.createElement("li");
+
+                    // Booking info text
+                    const textSpan = document.createElement("span");
+                    textSpan.textContent = `${ev.title} (${ev.start} to ${ev.end}) `;
+
+                    // Edit button (link)
+                    const editBtn = document.createElement("a");
+                    editBtn.href = `/admin/edit/${ev.id}`;
+                    editBtn.textContent = "Edit";
+                    editBtn.className = "btn btn-warning btn-sm ms-2";
+                    editBtn.style.textDecoration = "none";
+
+                    // Cancel button (form POST)
+                    const cancelForm = document.createElement("form");
+                    cancelForm.action = `/cancel/${ev.id}`;
+                    cancelForm.method = "post";
+                    cancelForm.style.display = "inline";
+
+                    const cancelBtn = document.createElement("button");
+                    cancelBtn.type = "submit";
+                    cancelBtn.textContent = "Cancel";
+                    cancelBtn.className = "btn btn-danger btn-sm ms-2";
+
+                    cancelForm.appendChild(cancelBtn);
+
+                    // Append all to li
+                    li.appendChild(textSpan);
+                    li.appendChild(editBtn);
+                    li.appendChild(cancelForm);
+
+                    detailsList.appendChild(li);
+                  });
+                }
+              })
+              .catch((err) => {
+                console.error("Error fetching events:", err);
+                detailsList.innerHTML = "<li>Error loading bookings</li>";
+              });
+          },
+        });
+
+        calendar.render();
+      });
+    </script>
   </body>
 </html>

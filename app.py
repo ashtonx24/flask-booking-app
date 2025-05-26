@@ -2,22 +2,18 @@ from ics import Calendar, Event
 from flask import send_file
 import tempfile
 import datetime
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify, Response
 import sqlite3
 import os
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import csv
-from flask import Response
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
-from flask import jsonify
 from datetime import datetime
 load_dotenv(dotenv_path='imp.env')
 
-
 app = Flask(__name__)
-
 
 # --- Flask-Mail Config ---
 app.config.update(
@@ -36,7 +32,6 @@ app.secret_key = 'a_very_strong_and_random_secret_key_123!'
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-# --- Configuration ---
 
 DB_FILE = 'bookings.db'
 
@@ -57,7 +52,6 @@ def load_user(user_id):
             return user
     return None
 
-
 # --- Database Setup ---
 def init_db():
     if not os.path.exists(DB_FILE):
@@ -76,8 +70,6 @@ def init_db():
         conn.commit()
         conn.close()
 
-
-# Run once at app start
 init_db()
 
 # --- Routes ---
@@ -104,26 +96,23 @@ def book():
         conn.close()
         return "Room already booked for that time slot", 400
 
-    c.execute('INSERT INTO bookings (name, room, start, end) VALUES (?, ?, ?, ?)', (name, room, start, end))
+    c.execute('INSERT INTO bookings (name, room, start, end, email) VALUES (?, ?, ?, ?, ?)', (name, room, start, end, email))
     conn.commit()
     conn.close()
 
-    # Send confirmation email...
-    # (Your existing mail sending code here)
     # Send confirmation email
     msg = Message(
         subject='Booking Confirmation', recipients=[email],
-                  sender=os.getenv('MAIL_USERNAME'))
+        sender=os.getenv('MAIL_USERNAME')
+    )
     msg.body = f"Hi {name}, your booking for {room} from {start} to {end} is confirmed."
     mail.send(msg)
 
     return redirect(url_for('index'))
 
-## for the admin page
 @app.route('/admin')
 @login_required
 def admin():
-    print(f"DEBUG: current_user.is_authenticated = {current_user.is_authenticated}")
     if not current_user.is_authenticated:
         return "Not logged in — access denied!", 403
     conn = sqlite3.connect(DB_FILE)
@@ -133,8 +122,6 @@ def admin():
     conn.close()
     return render_template('admin.html', bookings=all_bookings)
 
-## login and logout functionality
-# @app.route('/login', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -151,15 +138,12 @@ def login():
             return "Invalid credentials", 403
     return render_template('login.html')
 
-
-
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
 
-## Booking cancellation functionality
 @app.route('/cancel/<int:booking_id>', methods=['POST'])
 @login_required
 def cancel_booking(booking_id):
@@ -170,7 +154,6 @@ def cancel_booking(booking_id):
     conn.close()
     return redirect(url_for('admin'))
 
-# export route
 @app.route('/export')
 @login_required
 def export_bookings():
@@ -181,42 +164,38 @@ def export_bookings():
     conn.close()
 
     def generate():
-        yield 'ID,Name,Room,Start,End\n'
+        yield 'ID,Name,Room,Start,End,Email\n'
         for row in bookings:
             yield ','.join(map(str, row)) + '\n'
 
     return Response(generate(), mimetype='text/csv',
                     headers={'Content-Disposition': 'attachment;filename=bookings.csv'})
 
-    
 @login_manager.unauthorized_handler
 def unauthorized_callback():
     return redirect(url_for('login') + '?next=' + request.path)
 
-
-# This is the main route for the calendar view
+# Main route for calendar view
 @app.route('/calendar-view')
-@login_required
 def calendar_view():
     return render_template('calendar.html')
 
-# calendar data route for FullCalendar
+# Calendar data route for FullCalendar — UPDATED to include 'id' for edit/cancel links
 @app.route('/calendar-data')
-@login_required
 def calendar_data():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     today = datetime.now().isoformat(timespec='seconds')
-    c.execute("SELECT name, room, start, end FROM bookings WHERE end >= ?", (today,))
+    c.execute("SELECT id, name, room, start, end FROM bookings WHERE end >= ?", (today,))
     rows = c.fetchall()
     conn.close()
 
-    # Return events formatted for FullCalendar
     events = [{
-        "title": f"{room} - {name}",
-        "start": start,
-        "end": end
-    } for name, room, start, end in rows]
+        "id": row[0],  # id
+        "title": f"{row[2]} - {row[1]}",  # room - name
+        "start": row[3],
+        "end": row[4]
+    } for row in rows]
 
     return jsonify(events)
 
@@ -227,14 +206,13 @@ def edit_booking(booking_id):
     c = conn.cursor()
 
     if request.method == 'POST':
-        # Get updated data from form
         name = request.form['name']
         room = request.form['room']
         start = request.form['start']
         end = request.form['end']
         email = request.form['email']
 
-        # Optional: Check for overlapping bookings here, excluding current booking
+        # Overlap check, exclude current booking
         c.execute('''SELECT COUNT(*) FROM bookings WHERE room = ? AND id != ? AND (start < ? AND end > ?)''',
                   (room, booking_id, end, start))
         (overlap_count,) = c.fetchone()
@@ -242,7 +220,6 @@ def edit_booking(booking_id):
             conn.close()
             return "Room already booked for that time slot", 400
 
-        # Update booking in DB
         c.execute('''
             UPDATE bookings SET name = ?, room = ?, start = ?, end = ?, email = ?
             WHERE id = ?
@@ -252,15 +229,17 @@ def edit_booking(booking_id):
         return redirect(url_for('admin'))
 
     else:
-        # GET method: fetch current booking data
         c.execute('SELECT * FROM bookings WHERE id = ?', (booking_id,))
         booking = c.fetchone()
         conn.close()
         if not booking:
             return "Booking not found", 404
 
-        # booking = (id, name, room, start, end, email)
         return render_template('edit_booking.html', booking=booking)
+    
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 if __name__ == '__main__':
     app.run(debug=True)
