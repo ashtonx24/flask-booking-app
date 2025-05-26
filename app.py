@@ -11,6 +11,8 @@ import csv
 from flask import Response
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+from flask import jsonify
+from datetime import datetime
 load_dotenv(dotenv_path='imp.env')
 
 
@@ -186,44 +188,70 @@ def export_bookings():
     return Response(generate(), mimetype='text/csv',
                     headers={'Content-Disposition': 'attachment;filename=bookings.csv'})
 
-@app.route('/calendar/<int:booking_id>')
-@login_required
-def download_ics(booking_id):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('SELECT name, room, start, end FROM bookings WHERE id = ?', (booking_id,))
-    result = c.fetchone()
-    conn.close()
+# @app.route('/calendar/<int:booking_id>')
+# @login_required
+# def download_ics(booking_id):
+#     conn = sqlite3.connect(DB_FILE)
+#     c = conn.cursor()
+#     c.execute('SELECT name, room, start, end FROM bookings WHERE id = ?', (booking_id,))
+#     result = c.fetchone()
+#     conn.close()
 
-    if not result:
-        return "Booking not found", 404
+#     if not result:
+#         return "Booking not found", 404
 
-    name, room, start, end = result
+#     name, room, start, end = result
 
-    # Parse to datetime objects
-    start_dt = datetime.datetime.fromisoformat(start)
-    end_dt = datetime.datetime.fromisoformat(end)
+#     # Parse to datetime objects
+#     start_dt = datetime.datetime.fromisoformat(start)
+#     end_dt = datetime.datetime.fromisoformat(end)
 
-    # Create calendar event
-    cal = Calendar()
-    event = Event()
-    event.name = f"{room} Booking - {name}"
-    event.begin = start_dt
-    event.end = end_dt
-    event.location = "Your lodging location"  # Optional
-    event.description = f"Room: {room}\nBooked by: {name}"
-    cal.events.add(event)
+#     # Create calendar event
+#     cal = Calendar()
+#     event = Event()
+#     event.name = f"{room} Booking - {name}"
+#     event.begin = start_dt
+#     event.end = end_dt
+#     event.location = "Your lodging location"  # Optional
+#     event.description = f"Room: {room}\nBooked by: {name}"
+#     cal.events.add(event)
 
-    # Write to temporary file
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.ics') as f:
-        f.write(str(cal))
-        f.seek(0)
-        return send_file(f.name, as_attachment=True, download_name=f"{room}_booking.ics")
+#     # Write to temporary file
+#     with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.ics') as f:
+#         f.write(str(cal))
+#         f.seek(0)
+#         return send_file(f.name, as_attachment=True, download_name=f"{room}_booking.ics")
     
 @login_manager.unauthorized_handler
 def unauthorized_callback():
     return redirect(url_for('login') + '?next=' + request.path)
 
+
+# This is the main route for the calendar view
+@app.route('/calendar-view')
+@login_required
+def calendar_view():
+    return render_template('calendar.html')
+
+# calendar data route for FullCalendar
+@app.route('/calendar-data')
+@login_required
+def calendar_data():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    today = datetime.now().isoformat(timespec='seconds')
+    c.execute("SELECT name, room, start, end FROM bookings WHERE end >= ?", (today,))
+    rows = c.fetchall()
+    conn.close()
+
+    # Return events formatted for FullCalendar
+    events = [{
+        "title": f"{room} - {name}",
+        "start": start,
+        "end": end
+    } for name, room, start, end in rows]
+
+    return jsonify(events)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,101 @@
+<!-- templates/calendar.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Room Booking Calendar</title>
+
+    <!-- FullCalendar Global CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #ffffff;
+      }
+
+      h2 {
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      #calendar {
+        max-width: 900px;
+        margin: 2rem auto;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 8px;
+      }
+
+      .info-box {
+        max-width: 900px;
+        margin: 1rem auto;
+        padding: 1rem;
+        background: #f3f3f3;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Room Booking Calendar</h2>
+    <div id="calendar"></div>
+
+    <div class="info-box" id="booking-details">
+      <h3>Bookings on Selected Day:</h3>
+      <ul id="details-list"></ul>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("Initializing FullCalendar...");
+
+        const calendarEl = document.getElementById("calendar");
+        const detailsList = document.getElementById("details-list");
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "dayGridMonth",
+          events: "/calendar-data",
+          dateClick: function (info) {
+            const clickedDateStr = info.dateStr; // e.g., '2025-05-27'
+
+            fetch("/calendar-data")
+              .then((res) => res.json())
+              .then((events) => {
+                const filtered = events.filter((e) => {
+                  const startDateStr = e.start.slice(0, 10);
+                  const endDateStr = e.end.slice(0, 10);
+
+                  return (
+                    clickedDateStr >= startDateStr &&
+                    clickedDateStr <= endDateStr
+                  );
+                });
+
+                detailsList.innerHTML = "";
+
+                if (filtered.length === 0) {
+                  detailsList.innerHTML = "<li>No bookings</li>";
+                } else {
+                  filtered.forEach((ev) => {
+                    const li = document.createElement("li");
+                    li.textContent = `${ev.title} (${ev.start} to ${ev.end})`;
+                    detailsList.appendChild(li);
+                  });
+                }
+              })
+              .catch((err) => {
+                console.error("Error fetching events:", err);
+                detailsList.innerHTML = "<li>Error loading bookings</li>";
+              });
+          },
+        });
+
+        calendar.render();
+      });
+    </script>
+  </body>
+</html>

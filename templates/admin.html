@@ -4,59 +4,70 @@
   <head>
     <meta charset="UTF-8" />
     <title>Admin Booking View</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+      body {
+        background-color: #121212;
+        color: #ffffff;
+      }
+      table {
+        background-color: #1e1e1e;
+      }
+      th,
+      td {
+        vertical-align: middle;
+      }
+    </style>
   </head>
-  <body class="bg-gray-900 text-white p-6">
-    <h1 class="text-3xl font-bold mb-6">All Bookings</h1>
+  <body class="p-4">
+    <div class="container">
+      <h1 class="mb-4 text-center text-light">📋 All Bookings</h1>
 
-    <table class="min-w-full bg-gray-800 rounded-lg">
-      <thead>
-        <tr>
-          <th class="py-2 px-4 border-b border-gray-600">ID</th>
-          <th class="py-2 px-4 border-b border-gray-600">Name</th>
-          <th class="py-2 px-4 border-b border-gray-600">Room</th>
-          <th class="py-2 px-4 border-b border-gray-600">Start</th>
-          <th class="py-2 px-4 border-b border-gray-600">End</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for booking in bookings %}
-        <tr class="hover:bg-gray-700">
-          <td class="py-2 px-4 border-b border-gray-600">{{ booking[0] }}</td>
-          <td class="py-2 px-4 border-b border-gray-600">{{ booking[1] }}</td>
-          <td class="py-2 px-4 border-b border-gray-600">{{ booking[2] }}</td>
-          <td class="py-2 px-4 border-b border-gray-600">{{ booking[3] }}</td>
-          <td class="py-2 px-4 border-b border-gray-600">{{ booking[4] }}</td>
-          <td>
-            <form
-              action="{{ url_for('cancel_booking', booking_id=booking[0]) }}"
-              method="post"
-            >
-              <button type="submit">Cancel</button>
-            </form></td>
-            <td>
-            <a href="{{ url_for('download_ics', booking_id=booking[0]) }}"
-              >📅 Add to Calendar</a
-            >
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      <div class="table-responsive rounded shadow">
+        <table class="table table-dark table-bordered table-hover align-middle text-center">
+          <thead class="table-secondary text-dark">
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Name</th>
+              <th scope="col">Room</th>
+              <th scope="col">Start</th>
+              <th scope="col">End</th>
+              <th scope="col">Cancel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in bookings %}
+            <tr>
+              <td>{{ booking[0] }}</td>
+              <td>{{ booking[1] }}</td>
+              <td>{{ booking[2] }}</td>
+              <td>{{ booking[3] }}</td>
+              <td>{{ booking[4] }}</td>
+              <td>
+                <form action="{{ url_for('cancel_booking', booking_id=booking[0]) }}" method="post">
+                  <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                </form>
+              </td>
+              {# Removed .ics download block to prevent BuildError #}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-    <a href="{{ url_for('export_bookings') }}" class="btn btn-success">
-      📤 Export Bookings (CSV)
-    </a>
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+        <a href="{{ url_for('export_bookings') }}" class="btn btn-success mb-2 mb-md-0">
+          📤 Export Bookings (CSV)
+        </a>
+        <a href="/" class="text-decoration-none text-info">← Back to Booking</a>
+      </div>
 
-    <a href="/" class="mt-6 inline-block text-blue-400 hover:text-blue-600"
-      >← Back to Booking</a
-    >
+      <a href="{{ url_for('calendar_view') }}" class="btn btn-outline-info mt-4">
+        📅 View Booking Calendar
+      </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
